@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>DUCMANHTOOL AI (V39)</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+  body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); color: #1e293b; min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; user-select: none; -webkit-user-select: none; }
+  * { -webkit-touch-callout: none; }
+  
+  .snow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; overflow: hidden; }
+  .snow { position: absolute; background: #fff; border-radius: 50%; animation: fall linear infinite; box-shadow: 0 0 8px rgba(255,255,255,1); }
+  @keyframes fall { 0% { transform: translateY(-10vh) translateX(0); opacity: 1; } 100% { transform: translateY(110vh) translateX(30px); opacity: 0.3; } }
+  
+  .snow-ground { position: fixed; bottom: 0; left: 0; width: 100%; height: 25px; background: #fff; border-radius: 50% 50% 0 0 / 15px 15px 0 0; box-shadow: 0 -5px 15px rgba(255,255,255,0.9); z-index: 9998; pointer-events: none; }
+  .reminder-text { position: fixed; bottom: 30px; left: 0; width: 100%; text-align: center; font-size: 16px; font-weight: 900; color: #dc2626; text-shadow: 1px 1px 2px #fff, 0 0 10px #fecaca; z-index: 9999; pointer-events: none; text-transform: uppercase; letter-spacing: 1px; }
+  
+  @keyframes rainbow { 0% { color: #ef4444; } 20% { color: #f97316; } 40% { color: #eab308; } 60% { color: #22c55e; } 80% { color: #3b82f6; } 100% { color: #a855f7; } }
+
+  #timerDisplay {
+    position: fixed; top: 15px; left: 15px;
+    background: #fff; border: 2px solid #f59e0b;
+    padding: 8px 12px; border-radius: 8px;
+    font-weight: bold; font-size: 15px; color: #d97706;
+    z-index: 1000; display: none;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    animation: pulse 1s infinite alternate;
+  }
+  @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.05); } }
+
+  /* TƯỜNG LỬA */
+  #loginScreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(240, 249, 255, 0.95); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+  .login-box { background: #fff; padding: 30px 20px; border-radius: 15px; text-align: center; box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15); border: 3px solid #bae6fd; width: 100%; max-width: 400px; position: relative; }
+  
+  .kitty-icon { position: absolute; top: -40px; font-size: 80px; z-index: 10001; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1)); }
+  .kitty-left { left: -20px; transform: rotate(-15deg); }
+  .kitty-right { right: -20px; transform: rotate(15deg); }
+
+  .login-box h2 { margin-top: 10px; color: #0284c7; font-size: 24px; }
+  .login-box input { width: 100%; padding: 12px; margin: 15px 0; border: 2px solid #bae6fd; border-radius: 8px; font-size: 16px; text-align: center; background: #f0f9ff; }
+  .login-box button { width: 100%; padding: 15px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2); }
+  .login-box button:active { opacity: 0.8; }
+  
+  #keyError { color: #dc2626; font-size: 13px; display: none; margin-top: 10px; font-weight: bold; }
+  #usedKeyError { color: #e11d48; font-size: 14px; display: none; margin-top: 10px; font-weight: bold; background: #ffe4e6; padding: 5px; border-radius: 5px; }
+  #timeoutError { color: #e11d48; font-size: 14px; display: none; margin-top: 10px; font-weight: bold; background: #ffe4e6; padding: 5px; border-radius: 5px; }
+  
+  .lucky-text { margin-top: 20px; font-size: 20px; font-weight: 800; animation: rainbow 0.8s linear infinite; }
+  #deviceIdDisplay { margin-top: 15px; font-size: 12px; color: #64748b; user-select: text; -webkit-user-select: text; background: #e0f2fe; padding: 5px; border-radius: 5px; border: 1px dashed #38bdf8;}
+
+  /* TOOL CHÍNH */
+  #mainTool { display: none; width: 100%; max-width: 450px; margin: auto; padding: 15px 15px 80px 15px; position: relative; z-index: 1; min-height: 100vh; flex-direction: column; justify-content: center; }
+  
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; margin-top: 40px; position: relative; }
+  .title { font-size: 18px; font-weight: 900; animation: rainbow 3s linear infinite; }
+  
+  .menu-container { position: relative; }
+  .menu-btn { background: #fff; border: 1px solid #bae6fd; border-radius: 5px; font-size: 20px; padding: 2px 10px; cursor: pointer; color: #0284c7; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .menu-dropdown { display: none; position: absolute; right: 0; top: 35px; background: #fff; border: 1px solid #bae6fd; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); z-index: 100; min-width: 150px; overflow: hidden; }
+  .menu-dropdown button { width: 100%; text-align: left; padding: 12px 15px; border: none; background: none; font-size: 14px; font-weight: bold; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+  .menu-dropdown button:active { background: #f8fafc; }
+  .menu-dropdown button.admin-item { color: #0ea5e9; display: none; } 
+  .menu-dropdown button.logout-item { color: #dc2626; }
+  
+  .settings { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: flex; gap: 5px; font-size: 13px; align-items: center; flex-wrap: wrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .settings input { flex: 1; padding: 8px; border: 1px solid #bae6fd; border-radius: 4px; font-size: 14px; min-width: 80px; background: #f0f9ff; }
+  .settings button { background: #0284c7; color: #fff; border: none; padding: 8px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+  .btn-reset { background: #f59e0b !important; font-size: 12px; padding: 6px 10px; }
+  
+  .ai-box { background: #fff; padding: 12px; border-radius: 8px; text-align: center; margin-bottom: 10px; border: 2px solid #7dd3fc; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+  .ai-cau { font-size: 14px; font-weight: bold; margin-bottom: 5px; animation: rainbow 3s linear infinite; }
+  .ai-chot { font-size: 22px; font-weight: bold; padding: 10px; border-radius: 5px; margin-bottom: 5px; }
+  .chot-P { background: #dc2626; color: #fff; } 
+  .chot-B { background: #0284c7; color: #fff; } 
+  .chot-T { background: #16a34a; color: #fff; } 
+  .chot-Wait { background: #9ca3af; color: #fff; }
+  .chot-RED { background: #dc2626; color: #fff; border: 2px solid #fca5a5; }
+  
+  .bet-box { background: #f0fdf4; padding: 5px; border-radius: 5px; margin-bottom: 5px; }
+  .bet-box.red { background: #fef2f2; }
+  .bet-amount { font-size: 20px; font-weight: 900; animation: rainbow 2s linear infinite; }
+  .ai-text { font-size: 13px; color: #475569; line-height: 1.3; }
+
+  .row { display: flex; gap: 5px; margin-bottom: 8px; }
+  .row > * { flex: 1; }
+  .btn { border: none; border-radius: 8px; padding: 14px 6px; font-size: 16px; font-weight: bold; color: #fff; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+  .btn:active { opacity: 0.8; }
+  .btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+  .btn-win { background: #15803d; padding: 20px; font-size: 20px; } 
+  .btn-loss { background: #991b1b; padding: 20px; font-size: 20px; }
+  
+  .btn-p { background: #dc2626; } 
+  .btn-b { background: #0284c7; } 
+  .btn-t { background: #16a34a; } 
+  .btn-delete { background: #ec4899; font-size: 14px; }
+
+  .road { background: #fff; padding: 10px; border-radius: 8px; margin-top: 10px; text-align: center; min-height: 100px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .history { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-bottom: 10px;}
+  .chip { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: #fff; }
+  .chip.P { background: #dc2626; } 
+  .chip.B { background: #0284c7; } 
+  .chip.T { background: #16a34a; } 
+
+  /* TRANG QUẢN LÝ ADMIN (DASHBOARD) */
+  #adminDashboard { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #f8fafc; z-index: 20000; display: none; flex-direction: column; overflow-y: auto; }
+  .admin-header { background: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #bae6fd; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .admin-title { font-size: 18px; font-weight: bold; color: #0284c7; }
+  .btn-close-admin { background: #ef4444; color: #fff; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; }
+  .admin-content { padding: 15px; max-width: 800px; margin: 0 auto; width: 100%; }
+  
+  .dash-section { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .dash-section h3 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #0f172a; }
+  
+  .key-list { display: flex; flex-direction: column; gap: 10px; }
+  .key-item { border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .key-item.active { border-left: 5px solid #22c55e; background: #f0fdf4; }
+  .key-item.locked { border-left: 5px solid #ef4444; background: #fef2f2; }
+  .key-info { font-size: 14px; font-weight: bold; color: #334155; }
+  .key-status { font-size: 12px; padding: 4px 8px; border-radius: 4px; font-weight: bold; color: #fff; }
+  .key-status.active { background: #22c55e; }
+  .key-status.locked { background: #ef4444; }
+
+  .form-add-key { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+  .form-add-key input, .form-add-key select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+  .form-add-key button { padding: 10px; background: #0ea5e9; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+
+  .device-list { display: flex; flex-direction: column; gap: 10px; }
+  .device-item { border: 1px solid #e2e8f0; padding: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; }
+  .device-item.active { border-left: 5px solid #22c55e; background: #f0fdf4; }
+  .device-item.locked { border-left: 5px solid #ef4444; background: #fef2f2; }
+  .dev-info { font-size: 13px; }
+  .dev-id { font-weight: bold; font-size: 14px; color: #334155; display: flex; align-items: center; gap: 5px; }
+  .dev-os { font-size: 11px; background: #e2e8f0; padding: 2px 6px; border-radius: 4px; color: #475569; font-weight: normal;}
+  .dev-time { color: #64748b; margin-top: 4px; }
+  .dev-status { font-weight: bold; font-size: 12px; padding: 4px 8px; border-radius: 4px; white-space: nowrap; }
+  .dev-status.active { background: #dcfce7; color: #15803d; }
+  .dev-status.locked { background: #fee2e2; color: #b91c1c; }
+</style>
+</head>
+<body>
+
+<div class="snow-container" id="snow"></div>
+<div id="timerDisplay">⏳ Còn lại: <span id="timeLeftText">00:00</span></div>
+
+<!-- TƯỜNG LỬA -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="kitty-icon kitty-left">🐱</div>
+    <div class="kitty-icon kitty-right">🎀</div>
+    <h2 style="margin-top: 20px;">❄️ NHẬP KEY ❄️</h2>
+    <p style="font-size: 14px; color: #64748b; font-weight: 600; margin-bottom: 15px;">Vui lòng nhập Key để sử dụng Tool</p>
+    <input type="text" id="keyInput" placeholder="Nhập Key Tại Đây...">
+    <button onclick="checkKey()">XÁC NHẬN</button>
+    <p id="keyError" style="color: #dc2626; font-size: 13px; display: none; margin-top: 10px; font-weight: bold;">Key không đúng, vui lòng liên hệ admducmanh!</p>
+    <p id="usedKeyError" style="color: #e11d48; font-size: 14px; display: none; margin-top: 10px; font-weight: bold; background: #ffe4e6; padding: 5px; border-radius: 5px;">Key này đã được sử dụng, vui lòng liên hệ admducmanh để được cấp Key khác!</p>
+    <p id="timeoutError" style="color: #e11d48; font-size: 14px; display: none; margin-top: 10px; font-weight: bold; background: #ffe4e6; padding: 5px; border-radius: 5px;">Hết thời gian Key, vui lòng liên hệ admducmanh để được cấp Key khác!</p>
+    <div class="lucky-text">Chúc bạn may mắn</div>
+    <div id="deviceIdDisplay">Mã máy: <b id="devIdText"></b></div>
+  </div>
+</div>
+
+<div class="snow-ground"></div>
+<div class="reminder-text">🔥 NHỚ ĂN LÀ RÚT 🔥</div>
+
+<!-- TOOL CHÍNH -->
+<div id="mainTool">
+  <div class="header">
+    <div class="title">DUCMANHTOOL AI</div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div id="txtVon" style="font-size: 14px; font-weight: bold; color: #0f766e;">Vốn: 0 K</div>
+      <div class="menu-container">
+        <button class="menu-btn" onclick="toggleMenu()">☰</button>
+        <div class="menu-dropdown" id="dropdownMenu">
+          <button class="admin-item" id="adminBtn" onclick="openAdminDashboard()">🔑 Trang Quản Lý</button>
+          <button class="logout-item" onclick="logout()">🚪 Đăng xuất</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="settings" id="setupBox">
+    <div style="width: 100%; font-size: 13px; color: #e11d48; margin-bottom: 5px; font-weight: bold;">⚠️ Nhập vốn của bạn:</div>
+    <input type="number" id="inputVon" placeholder="Vốn (K)">
+    <input type="number" id="inputStop" placeholder="Dừng lỗ (K)">
+    <button onclick="batDau()">BẮT ĐẦU</button>
+  </div>
+
+  <div class="settings" id="playingBox" style="display:none; justify-content: space-between;">
+    <span style="font-size: 13px; color: #64748b;">Đang quản lý vốn...</span>
+    <div style="display: flex; gap: 5px;">
+      <button class="btn-reset" onclick="resetVon()">🔄 RS VỐN</button>
+    </div>
+  </div>
+
+  <div class="ai-box">
+    <div id="aiCau" class="ai-cau">Chờ dữ liệu...</div>
+    <div id="aiChot" class="ai-chot chot-Wait">CHƯA ĐỦ VÁN</div>
+    <div id="betBox" class="bet-box" style="display:none;">
+      <div style="font-size: 12px; font-weight: bold;">Cược đề xuất:</div>
+      <div id="betAmount" class="bet-amount">0 K</div>
+    </div>
+    <div id="aiText" class="ai-text">Nhập ít nhất 5 ván...</div>
+  </div>
+
+  <div class="row" style="margin-bottom: 10px;">
+    <button class="btn btn-p" onclick="add('P')">CÁI</button>
+    <button class="btn btn-t" onclick="add('T')">HÒA</button>
+    <button class="btn btn-b" onclick="add('B')">CON</button>
+  </div>
+
+  <div class="row">
+    <button class="btn btn-win" id="btnWin" onclick="record(true)">✅ THẮNG</button>
+    <button class="btn btn-loss" id="btnLoss" onclick="record(false)">❌ THUA</button>
+  </div>
+  
+  <div class="row">
+    <button class="btn btn-delete" onclick="undo()">↩ XÓA VÁN CUỐI</button>
+    <button class="btn" onclick="resetAllCau()" style="background: #475569; font-size: 14px;">🗑️ RESET TẤT CẢ CẦU</button>
+  </div>
+
+  <div class="road">
+    <div style="font-size: 13px; font-weight: bold; color: #0284c7; margin-bottom: 5px;">Lịch sử cầu</div>
+    <div class="history" id="history"></div>
+  </div>
+</div>
+
+<!-- TRANG QUẢN LÝ ADMIN (DASHBOARD) -->
+<div id="adminDashboard">
+  <div class="admin-header">
+    <div class="admin-title">👑 BẢNG ĐIỀU KHIỂN ADMIN</div>
+    <button class="btn-close-admin" onclick="closeAdminDashboard()">Đóng</button>
+  </div>
+  <div class="admin-content">
+    
+    <div class="dash-section">
+      <h3>➕ Cấp Key Mới</h3>
+      <div class="form-add-key">
+        <input type="text" id="newKeyInput" placeholder="Tên Key (VD: khach1)...">
+        <input type="number" id="newKeyDevices" placeholder="Số thiết bị tối đa..." value="1">
+        <select id="newKeyTime">
+            <option value="1d">1 Ngày</option>
+            <option value="7d">7 Ngày</option>
+            <option value="30d">30 Ngày</option>
+            <option value="0">Vĩnh viễn</option>
+        </select>
+        <button onclick="addKeyFirebase()">+ Tạo Key</button>
+      </div>
+    </div>
+
+    <div class="dash-section">
+      <h3>📋 Danh Sách Key Khách Hàng</h3>
+      <div class="key-list" id="keyList">
+          <div style="text-align:center; padding: 10px; color: #64748b;">Đang tải dữ liệu...</div>
+      </div>
+    </div>
+
+    <div class="dash-section">
+      <h3>📱 Lịch Sử Máy Này (Gần đây)</h3>
+      <div class="device-list" id="deviceList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- NHÚNG FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, get, update, set, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDUSrba4anS2pfV94hzsfUHGLpsmpehAw0",
+    authDomain: "key-adm-ducmanh.firebaseapp.com",
+    databaseURL: "https://key-adm-ducmanh-default-rtdb.firebaseio.com",
+    projectId: "key-adm-ducmanh",
+    storageBucket: "key-adm-ducmanh.firebasestorage.app",
+    messagingSenderId: "834378760735",
+    appId: "1:834378760735:web:f659d4995a10a2461a4b2a"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // API kiểm tra key
+  window.checkKeyAPI = async function(key, deviceId) {
+    try {
+      const snapshot = await get(ref(db, 'keys/' + key));
+      if (!snapshot.exists()) return { ok: false, msg: "Key không tồn tại!" };
+
+      const data = snapshot.val();
+      
+      if (data.expireAt && data.expireAt !== 0 && Date.now() > data.expireAt) {
+          return { ok: false, msg: "Key đã hết hạn sử dụng!" };
+      }
+
+      let devices = data.devices || [];
+
+      if (!devices.includes(deviceId)) {
+        if (devices.length >= data.maxDevices) {
+          return { ok: false, msg: "Key đã dùng đủ " + data.maxDevices + " thiết bị!" };
+        }
+        devices.push(deviceId);
+        await update(ref(db, 'keys/' + key), { devices: devices });
+      }
+      return { ok: true, msg: "Thành công" };
+    } catch (e) {
+      return { ok: false, msg: "Lỗi kết nối mạng!" };
+    }
+  };
+
+  // API tạo key
+  window.createKeyAPI = async function(key, maxDevices, timeOption) {
+    try {
+      let expireAt = 0;
+      if (timeOption === '1d') expireAt = Date.now() + 24 * 60 * 60 * 1000;
+      else if (timeOption === '7d') expireAt = Date.now() + 7 * 24 * 60 * 60 * 1000;
+      else if (timeOption === '30d') expireAt = Date.now() + 30 * 24 * 60 * 60 * 1000;
+
+      await set(ref(db, 'keys/' + key), { 
+          maxDevices: maxDevices, 
+          devices: [],
+          expireAt: expireAt,
+          createdAt: Date.now()
+      });
+      return true;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // API lấy danh sách key cho admin
+  window.getAllKeysAPI = function(callback) {
+      const keysRef = ref(db, 'keys');
+      onValue(keysRef, (snapshot) => {
+          callback(snapshot.val());
+      });
+  };
+
+  window.apiReady = true; 
+</script>
+
+<script>
+document.addEventListener('contextmenu', event => event.preventDefault());
+document.onkeydown = function(e) {
+  if (e.keyCode == 123) return false;
+  if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0))) return false;
+  if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
+};
+
+// LƯU TRỮ LOCAL (GIỮ NGUYÊN CODE CŨ)
+const S_KEYS = 'ducmanh_keys_v39';
+const S_BANK = 'ducmanh_bank_v39';
+const S_DB = 'ducmanh_db_v39';
+const S_USED = 'ducmanh_used_keys_v39';
+const S_LOGS = 'ducmanh_key_logs_v39';
+
+const ADMIN_KEY = "ducmanh121210"; 
+
+// HÀM TẠO MÃ MÁY (DEVICE ID) - GIỮ NGUYÊN
+function getDeviceId() {
+    let canvas = document.createElement('canvas');
+    let ctx = canvas.getContext('2d');
+    ctx.textBaseline = "top";
+    ctx.font = "14px 'Arial'";
+    ctx.fillStyle = "#f60";
+    ctx.fillRect(125, 1, 62, 20);
+    ctx.fillStyle = "#069";
+    ctx.fillText("DUCMANHTOOL", 2, 15);
+    let hash = 0;
+    let str = canvas.toDataURL() + navigator.userAgent + screen.width + screen.height;
+    for (let i = 0; i < str.length; i++) {
+        let char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return "ID-" + Math.abs(hash).toString(16).toUpperCase();
+}
+function getOSName() {
+    let ua = navigator.userAgent;
+    if (/iPhone|iPad|iPod/i.test(ua)) return "iOS";
+    if (/Android/i.test(ua)) return "Android";
+    if (/Windows/i.test(ua)) return "Windows (PC)";
+    if (/Macintosh|Mac OS X/i.test(ua)) return "MacOS (PC)";
+    if (/Linux/i.test(ua)) return "Linux (PC)";
+    return "Thiết bị khác";
+}
+
+const MY_DEVICE_ID = getDeviceId();
+const MY_OS = getOSName();
+window.MY_DEVICE_ID = MY_DEVICE_ID; 
+document.getElementById('devIdText').textContent = MY_DEVICE_ID + " (" + MY_OS + ")";
+
+let bank = { current: 0, stop: 0, active: false };
+let db = JSON.parse(localStorage.getItem(S_DB) || '[]');
+let bet = 0, winStreak = 0, lossStreak = 0;
+let timerInterval = null;
+
+// GIỮ NGUYÊN HÀM PARSE TIME VÀ UPDATE TIMER CỦA MÀY
+function parseTimeToMs(timeStr) {
+    let str = timeStr.toLowerCase().replace(/\s+/g, ''); 
+    if (str === 'vv') return -1; 
+    let regex = /(\d+(?:\.\d+)?)(th|t|n|g|p|s)/g;
+    let matches, totalMs = 0, hasMatch = false;
+    while ((matches = regex.exec(str)) !== null) {
+        hasMatch = true;
+        let val = parseFloat(matches[1]);
+        let unit = matches[2];
+        if (unit === 'th') totalMs += val * 30 * 24 * 60 * 60 * 1000;
+        else if (unit === 't') totalMs += val * 7 * 24 * 60 * 60 * 1000;
+        else if (unit === 'n') totalMs += val * 24 * 60 * 60 * 1000;
+        else if (unit === 'g') totalMs += val * 60 * 60 * 1000;
+        else if (unit === 'p') totalMs += val * 60 * 1000;
+        else if (unit === 's') totalMs += val * 1000;
+    }
+    if (!hasMatch || totalMs === 0) return 0;
+    return totalMs;
+}
+
+function formatDate(timestamp) {
+    if(!timestamp) return "...";
+    let d = new Date(timestamp);
+    return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')} - ${d.getDate()}/${d.getMonth()+1}/${d.getFullYear()}`;
+}
+
+function updateTimer(endTime) {
+    let now = Date.now();
+    let timeLeft = endTime - now;
+    if (timeLeft > 0) {
+        let weeks = Math.floor(timeLeft / (1000 * 60 * 60 * 24 * 7));
+        let days = Math.floor((timeLeft % (1000 * 60 * 60 * 24 * 7)) / (1000 * 60 * 60 * 24));
+        let hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        let minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        let seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+        let displayStr = "";
+        if (weeks > 0) displayStr += weeks + "T ";
+        if (days > 0) displayStr += days + "N ";
+        if (hours > 0) displayStr += hours + "g ";
+        displayStr += minutes.toString().padStart(2, '0') + "p:" + seconds.toString().padStart(2, '0') + "s";
+        document.getElementById('timeLeftText').textContent = displayStr;
+    }
+}
+
+function toggleMenu() {
+    let menu = document.getElementById('dropdownMenu');
+    let isAdmin = sessionStorage.getItem('ducmanh_is_admin') === 'true' || localStorage.getItem('ducmanh_is_admin') === 'true';
+    if (isAdmin) document.getElementById('adminBtn').style.display = 'block';
+    else document.getElementById('adminBtn').style.display = 'none';
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+}
+document.addEventListener('click', function(event) {
+    let menu = document.getElementById('dropdownMenu');
+    let btn = document.querySelector('.menu-btn');
+    if (menu && menu.style.display === 'block' && !btn.contains(event.target) && !menu.contains(event.target)) {
+        menu.style.display = 'none';
+    }
+});
+
+// ================= KIỂM TRA KEY (ĐÃ NÂNG CẤP LÊN FIREBASE) =================
+async function checkKey() {
+  let val = document.getElementById('keyInput').value.trim();
+  document.getElementById('keyError').style.display = 'none';
+  document.getElementById('timeoutError').style.display = 'none';
+  document.getElementById('usedKeyError').style.display = 'none';
+
+  if (val === ADMIN_KEY) {
+      loginSuccess(val, true);
+      return;
+  }
+
+  if (!window.apiReady) {
+      document.getElementById('keyError').textContent = "Đang kết nối Server... Vui lòng đợi 1-2s rồi bấm lại!";
+      document.getElementById('keyError').style.display = 'block';
+      return;
+  }
+
+  document.getElementById('keyError').textContent = "Đang kiểm tra key...";
+  document.getElementById('keyError').style.display = 'block';
+  document.getElementById('keyError').style.color = "#0284c7";
+
+  let result = await window.checkKeyAPI(val, MY_DEVICE_ID);
+  
+  if (result.ok) {
+      loginSuccess(val, false);
+  } else {
+      document.getElementById('keyError').style.color = "#dc2626";
+      document.getElementById('keyError').textContent = result.msg;
+  }
+}
+
+function loginSuccess(val, isAdmin) {
+    sessionStorage.setItem('ducmanh_key', val);
+    sessionStorage.setItem('ducmanh_is_admin', isAdmin);
+    localStorage.setItem('ducmanh_key', val);
+    localStorage.setItem('ducmanh_is_admin', isAdmin);
+    
+    if (!isAdmin) {
+        let currentLogs = JSON.parse(localStorage.getItem(S_LOGS) || '[]');
+        currentLogs.push({
+            deviceId: MY_DEVICE_ID,
+            os: MY_OS,
+            keyName: val,
+            start: Date.now(),
+            end: null,
+            status: 'active'
+        });
+        localStorage.setItem(S_LOGS, JSON.stringify(currentLogs));
+    }
+
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainTool').style.display = 'flex';
+    checkBank();
+}
+
+function logout() {
+  let currentKey = sessionStorage.getItem('ducmanh_key') || localStorage.getItem('ducmanh_key');
+  let isAdmin = sessionStorage.getItem('ducmanh_is_admin') === 'true' || localStorage.getItem('ducmanh_is_admin') === 'true';
+  
+  if (isAdmin) {
+      sessionStorage.removeItem('ducmanh_key');
+      sessionStorage.removeItem('ducmanh_is_admin');
+      localStorage.removeItem('ducmanh_key');
+      localStorage.removeItem('ducmanh_is_admin');
+      localStorage.removeItem(S_BANK);
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('mainTool').style.display = 'none';
+      document.getElementById('dropdownMenu').style.display = 'none';
+      document.getElementById('keyInput').value = '';
+  } else {
+      let currentLogs = JSON.parse(localStorage.getItem(S_LOGS) || '[]');
+      for(let i = currentLogs.length - 1; i >= 0; i--) {
+          if(currentLogs[i].keyName === currentKey && currentLogs[i].status === 'active') {
+              currentLogs[i].end = Date.now();
+              currentLogs[i].status = 'locked';
+              break;
+          }
+      }
+      localStorage.setItem(S_LOGS, JSON.stringify(currentLogs));
+
+      sessionStorage.removeItem('ducmanh_key');
+      sessionStorage.removeItem('ducmanh_is_admin');
+      localStorage.removeItem('ducmanh_key');
+      localStorage.removeItem('ducmanh_is_admin');
+      localStorage.removeItem(S_BANK);
+      bank = { current: 0, stop: 0, active: false };
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('mainTool').style.display = 'none';
+      document.getElementById('dropdownMenu').style.display = 'none';
+      document.getElementById('keyInput').value = '';
+  }
+}
+
+// --- TRANG QUẢN LÝ ADMIN ---
+function openAdminDashboard() {
+  let isAdmin = sessionStorage.getItem('ducmanh_is_admin') === 'true' || localStorage.getItem('ducmanh_is_admin') === 'true';
+  if (!isAdmin) { alert("Chỉ Admin mới có quyền truy cập!"); return; }
+  
+  document.getElementById('dropdownMenu').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'flex';
+  
+  if (window.apiReady) {
+      window.getAllKeysAPI((keysObj) => {
+          let listDiv = document.getElementById('keyList');
+          listDiv.innerHTML = '';
+          
+          if (!keysObj) {
+              listDiv.innerHTML = '<div style="text-align:center; padding: 10px; color: #64748b;">Chưa có Key nào được tạo.</div>';
+              return;
+          }
+
+          let arrKeys = Object.keys(keysObj).map(k => ({ keyName: k, ...keysObj[k] })).sort((a,b) => b.createdAt - a.createdAt);
+
+          arrKeys.forEach(item => {
+              let isExpired = item.expireAt > 0 && Date.now() > item.expireAt;
+              let isLocked = isExpired;
+              
+              let div = document.createElement('div');
+              div.className = 'key-item ' + (isLocked ? 'locked' : 'active');
+              
+              let statusText = isLocked ? 'HẾT HẠN' : 'HOẠT ĐỘNG';
+              let expireText = item.expireAt === 0 ? 'Vĩnh viễn' : new Date(item.expireAt).toLocaleString('vi-VN');
+              
+              div.innerHTML = `
+                  <div class="key-info">
+                      <div>🔑 ${item.keyName}</div>
+                      <div style="font-size: 12px; font-weight: normal; color: #64748b; margin-top: 4px;">
+                          Thiết bị: ${(item.devices || []).length}/${item.maxDevices} <br>
+                          Hạn: ${expireText}
+                      </div>
+                  </div>
+                  <div class="key-status ${isLocked ? 'locked' : 'active'}">${statusText}</div>
+              `;
+              listDiv.appendChild(div);
+          });
+      });
+  }
+  renderDashboard();
+}
+
+function closeAdminDashboard() {
+  document.getElementById('adminDashboard').style.display = 'none';
+}
+
+function renderDashboard() {
+  let listDiv = document.getElementById('deviceList');
+  listDiv.innerHTML = '';
+  let logs = JSON.parse(localStorage.getItem(S_LOGS) || '[]');
+  
+  if (logs.length === 0) {
+      listDiv.innerHTML = '<div style="text-align:center; color:#64748b; padding:10px;">Chưa có dữ liệu kích hoạt.</div>';
+  } else {
+      logs.slice().reverse().forEach(log => {
+          let div = document.createElement('div');
+          let isActive = log.status === 'active';
+          div.className = 'device-item ' + (isActive ? 'active' : 'locked');
+          let startStr = formatDate(log.start);
+          let endStr = log.end ? formatDate(log.end) : 'Đang dùng...';
+          div.innerHTML = `
+              <div class="dev-info">
+                  <div class="dev-id">📱 ${log.deviceId} <span class="dev-os">${log.os}</span></div>
+                  <div class="dev-time">Key: <b>${log.keyName}</b></div>
+                  <div class="dev-time">Bắt đầu: ${startStr}</div>
+                  <div class="dev-time">Kết thúc: ${endStr}</div>
+              </div>
+              <div class="dev-status ${isActive ? 'active' : 'locked'}">
+                  ${isActive ? 'HOẠT ĐỘNG' : 'ĐÃ KHÓA'}
+              </div>
+          `;
+          listDiv.appendChild(div);
+      });
+  }
+}
+
+async function addKeyFirebase() {
+  let newKeyName = document.getElementById('newKeyInput').value.trim();
+  let newKeyDevices = parseInt(document.getElementById('newKeyDevices').value);
+  let newKeyTime = document.getElementById('newKeyTime').value;
+  
+  if (!newKeyName || !newKeyDevices) { alert("Vui lòng nhập đủ Tên Key và Số thiết bị!"); return; }
+  if (!window.apiReady) { alert("Đang kết nối Server, vui lòng thử lại sau!"); return; }
+
+  let success = await window.createKeyAPI(newKeyName, newKeyDevices, newKeyTime);
+  
+  if (success) {
+      alert("Đã tạo Key THÀNH CÔNG: " + newKeyName);
+      document.getElementById('newKeyInput').value = '';
+  } else {
+      alert("Lỗi khi tạo Key, vui lòng kiểm tra mạng!");
+  }
+}
+
+// --- LOGIC TOOL AI VÀ CẦU TỰ ĐỘNG (GIỮ NGUYÊN 100%) ---
+function resetVon() {
+  if(confirm("Bạn có chắc muốn xóa vốn cũ và nhập lại từ đầu?")) {
+    localStorage.removeItem(S_BANK);
+    bank = { current: 0, stop: 0, active: false };
+    checkBank();
+  }
+}
+
+function checkBank() {
+  let saved = localStorage.getItem(S_BANK);
+  if (saved) {
+    bank = JSON.parse(saved);
+    if (bank.active) {
+      document.getElementById('setupBox').style.display = 'none';
+      document.getElementById('playingBox').style.display = 'flex';
+    } else {
+      document.getElementById('setupBox').style.display = 'flex';
+      document.getElementById('playingBox').style.display = 'none';
+    }
+  } else {
+    document.getElementById('setupBox').style.display = 'flex';
+    document.getElementById('playingBox').style.display = 'none';
+  }
+  render();
+}
+
+function batDau() {
+  let v = parseFloat(document.getElementById('inputVon').value);
+  let s = parseFloat(document.getElementById('inputStop').value);
+  if (!v || v <= 0) { alert('Nhập vốn hợp lệ!'); return; }
+  if (!s || s >= v) { alert('Dừng lỗ phải nhỏ hơn vốn!'); return; }
+  bank = { current: v, stop: s, active: true };
+  localStorage.setItem(S_BANK, JSON.stringify(bank));
+  checkBank();
+  alert('Đã lưu vốn: ' + v + 'K');
+}
+
+function record(isWin) {
+  if (bet === 0) { alert("Chưa có kèo để chốt!"); return; }
+  if (isWin) { bank.current += bet; winStreak++; lossStreak = 0; }
+  else { bank.current -= bet; lossStreak++; winStreak = 0; }
+  localStorage.setItem(S_BANK, JSON.stringify(bank));
+  
+  let pat = getPattern(db);
+  let aiChoice = pat.predict; 
+  let resultColor = '';
+  if (aiChoice === 'P') { 
+      if (isWin) resultColor = 'P'; else resultColor = 'B';       
+  } else if (aiChoice === 'B') { 
+      if (isWin) resultColor = 'B'; else resultColor = 'P';       
+  } else {
+      if (isWin) resultColor = 'P'; else resultColor = 'B';
+  }
+  
+  db.push({ r: resultColor, pair: null });
+  localStorage.setItem(S_DB, JSON.stringify(db));
+  bet = 0; 
+  render();
+}
+
+function undo() {
+  db.pop(); localStorage.setItem(S_DB, JSON.stringify(db));
+  bet = 0; render();
+}
+
+function resetAllCau() {
+  if(confirm("Bạn có chắc muốn xóa TOÀN BỘ lịch sử cầu không? (Về 0)")) {
+      db = [];
+      localStorage.setItem(S_DB, JSON.stringify(db));
+      bet = 0;
+      render();
+  }
+}
+
+function add(type) {
+  if (bank.current <= bank.stop) { alert('ĐÃ CHẠM DỪNG LỖ!'); return; }
+  db.push({ r: type, pair: null });
+  localStorage.setItem(S_DB, JSON.stringify(db));
+  render();
+}
+
+function getPattern(arr) {
+  let len = arr.length;
+  if (len < 5) return { name: "Chưa đủ ván", predict: null, reason: "", confidence: 0 };
+  let results = arr.map(x => x.r);
+  let last = results[len - 1];
+  let s8 = results.slice(-8).join('');
+  let s6 = results.slice(-6).join('');
+  let s4 = results.slice(-4).join('');
+
+  if (s6 === 'PBBPPP' || s6 === 'BPPBBB') return { name: "Cầu 1-2-3", predict: last === 'P' ? 'B' : 'P', reason: "Hết nhịp 1-2-3, bẻ cầu.", confidence: 65 };
+  if (s6 === 'PPPBBP' || s6 === 'BBBPPB') return { name: "Cầu 3-2-1", predict: last === 'P' ? 'B' : 'P', reason: "Hết nhịp 3-2-1, bẻ cầu.", confidence: 65 };
+  if (s6 === 'PBBBP' || s6 === 'BPPPB') return { name: "Cầu 1-3-1", predict: last === 'P' ? 'B' : 'P', reason: "Đối xứng 1-3-1.", confidence: 60 };
+  if (s6 === 'PPBPPB' || s6 === 'BBPBBP') return { name: "Cầu 2-1-2", predict: last === 'P' ? 'B' : 'P', reason: "Hết nhịp 2-1-2.", confidence: 60 };
+  if (s6 === 'PBBPPB' || s6 === 'BPPBBP') return { name: "Cầu 1-2-2-1", predict: last === 'P' ? 'B' : 'P', reason: "Đối xứng 1-2-2-1.", confidence: 60 };
+  if (s8 === 'PPPBPBPP' || s8 === 'BBBPBPBB') return { name: "Cầu 3-1-2-1-1-1", predict: last === 'P' ? 'B' : 'P', reason: "Cầu phức tạp, bẻ.", confidence: 65 };
+  if (s4 === 'PPBB' || s4 === 'BBPP') return { name: "Cầu 2-2", predict: last === 'P' ? 'B' : 'P', reason: "Hết nhịp 2-2, đảo.", confidence: 60 };
+  if (s4 === 'PBBP' || s4 === 'BPPB') return { name: "Cầu 1-2-1", predict: last === 'P' ? 'B' : 'P', reason: "Đối xứng 1-2-1.", confidence: 55 };
+  if (s6 === 'PPPBBB' || s6 === 'BBBPPP') return { name: "Cầu 3-3", predict: last === 'P' ? 'B' : 'P', reason: "Hết nhịp 3-3.", confidence: 65 };
+
+  if (s8 === 'PBPBPBPB' || s8 === 'BPBPBPBP') return { name: "Đảo 1-1 (Dài)", predict: last === 'P' ? 'P' : 'B', reason: "Đảo 1-1 quá dài, sắp gãy.", confidence: 65 };
+  if (s4 === 'PBPB' || s4 === 'BPBP') return { name: "Đảo 1-1", predict: last === 'P' ? 'B' : 'P', reason: "Đảo 1-1.", confidence: 60 };
+
+  let streak = 1;
+  for (let i = len - 2; i >= 0; i--) { if (results[i] === last) streak++; else break; }
+  if (streak >= 6) return { name: `Bệt Dài (${last === 'P' ? 'Đỏ' : 'Xanh'})`, predict: last === 'P' ? 'B' : 'P', reason: "Bệt 6+ tay, ép bẻ cầu.", confidence: 75 };
+  if (streak === 5) return { name: `Bệt Dài (${last === 'P' ? 'Đỏ' : 'Xanh'})`, predict: last === 'P' ? 'B' : 'P', reason: "Bệt 5 tay, rủi ro gãy cao.", confidence: 70 };
+  if (streak === 4) return { name: `Bệt 4 (${last === 'P' ? 'Đỏ' : 'Xanh'})`, predict: last, reason: "Bệt 4 tay, tiếp tục theo dõi.", confidence: 60 };
+  if (streak === 3) return { name: `Bệt 3 (${last === 'P' ? 'Đỏ' : 'Xanh'})`, predict: last, reason: "Bệt 3 tay, xu hướng mạnh.", confidence: 55 };
+
+  return { name: "Cầu tự do", predict: null, reason: "Cầu tự do, bỏ qua an toàn.", confidence: 0 };
+}
+
+function render() {
+  if (!bank.active) return;
+  document.getElementById('txtVon').textContent = `Vốn: ${bank.current.toFixed(1)} K`;
+  let hist = document.getElementById('history');
+  hist.innerHTML = '';
+  db.forEach(x => {
+    let d = document.createElement('div');
+    d.className = 'chip ' + x.r; 
+    d.textContent = x.r; 
+    hist.appendChild(d);
+  });
+
+  if (bank.current <= bank.stop) {
+    document.getElementById('aiCau').textContent = "CẢNH BÁO ĐỎ";
+    document.getElementById('aiChot').className = 'ai-chot chot-RED';
+    document.getElementById('aiChot').textContent = 'DỪNG LẠI - CHẠM ĐÁY';
+    document.getElementById('aiText').innerHTML = `Đã chạm dừng lỗ.`;
+    document.getElementById('betBox').style.display = 'none'; 
+    return;
+  }
+
+  let pat = getPattern(db);
+  document.getElementById('aiCau').textContent = "Cầu: " + pat.name;
+
+  let chot = 'WAIT', lyDo = '', percent = 0;
+  let suggestedBet = 0;
+
+  if (pat.predict) { 
+      chot = pat.predict; 
+      percent = pat.confidence; 
+      lyDo = pat.reason; 
+      if (percent >= 65) {
+          let maxBet = bank.current * 0.10;
+          suggestedBet = Math.ceil(maxBet / 10) * 10;
+          lyDo += ` (Cầu mạnh, cược 10% vốn)`;
+      } else if (percent >= 55) {
+          let halfBet = bank.current * 0.05;
+          suggestedBet = Math.ceil(halfBet / 10) * 10;
+          lyDo += ` (Cầu yếu hơn, cược 1/2 an toàn)`;
+      }
+      if (suggestedBet < 10) suggestedBet = 10;
+  } else { 
+      chot = 'WAIT'; 
+      lyDo = pat.reason; 
+  }
+
+  if (chot === 'WAIT') {
+    document.getElementById('aiChot').className = 'ai-chot chot-RED';
+    document.getElementById('aiChot').textContent = 'ĐÈN ĐỎ: NGƯNG';
+    document.getElementById('betBox').style.display = 'block';
+    document.getElementById('betBox').classList.add('red');
+    document.getElementById('betAmount').textContent = `0 K`;
+    bet = 0;
+  } else {
+    document.getElementById('betBox').style.display = 'block';
+    document.getElementById('betBox').classList.remove('red');
+    bet = suggestedBet;
+    document.getElementById('betAmount').textContent = `${bet} K`;
+    if (chot === 'P') { document.getElementById('aiChot').textContent = `CÁI (${percent}%)`; document.getElementById('aiChot').className = 'ai-chot chot-P'; }
+    if (chot === 'B') { document.getElementById('aiChot').textContent = `CON (${percent}%)`; document.getElementById('aiChot').className = 'ai-chot chot-B'; }
+  }
+  document.getElementById('aiText').innerHTML = `<b>Lý do:</b> ${lyDo}`;
+}
+
+setInterval(() => {
+  let snowflake = document.createElement('div');
+  snowflake.classList.add('snow');
+  let size = Math.random() * 5 + 2; 
+  snowflake.style.width = size + 'px'; 
+  snowflake.style.height = size + 'px';
+  snowflake.style.left = Math.random() * 100 + 'vw';
+  snowflake.style.animationDuration = Math.random() * 2 + 3 + 's'; 
+  document.getElementById('snow').appendChild(snowflake);
+  setTimeout(() => snowflake.remove(), 6000);
+}, 50); 
+
+window.onload = function() {
+  let savedKey = sessionStorage.getItem('ducmanh_key') || localStorage.getItem('ducmanh_key');
+  if (savedKey) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('mainTool').style.display = 'flex';
+      checkBank();
+  } else {
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('mainTool').style.display = 'none';
+  }
+  render();
+};
+</script>
+</body>
+</html>
